@@ -13,8 +13,8 @@ import itertools
 
 seaborn.set_context(context='talk')
 
-WORKING_DIRECTORY = Path(os.path.abspath(__file__)).parent
-GRAPHS_DIRECTORY = os.path.join(WORKING_DIRECTORY, 'graphs_directory')
+WORKING_DIRECTORY = Path(os.path.abspath(__file__)).parents[1]
+GRAPHS_DIRECTORY = os.path.join(WORKING_DIRECTORY, 'graphs')
 if not os.path.isdir(GRAPHS_DIRECTORY):
     os.makedirs(GRAPHS_DIRECTORY)
 
@@ -108,6 +108,51 @@ class _QueryOpenFDA:
         """
         raise NotImplementedError
 
+    def plot(self, x_name, y_name, cls=seaborn.lineplot, fname=None,
+             title=None, xlabel=None, ylabel=None, savefig=False, legend=False,
+             **kwargs):
+        """
+
+        Args:
+            x_name  (str)      : name of variable on x-axis, must be column in dataframe returned by :py:meth:`extract_relevant_data`
+            y_name  (str)      : name of variable of y-axis, must be column in dataframe returned by :py:meth:`extract_relevant_data`
+            cls     (callable) : either seaborn.lineplot or seaborn.barplot
+            savefig (bool)     : Save to file or not
+            fname   (str)      : file name to save to for when savefig=True
+            title   (str)      : title for plot
+            xlabel  (str)      : xlabel for plot
+            ylabel  (str)      : ylabel for plot
+            legend  (bool)      : legend
+            **kwargs           : unpacked and passed to cls
+
+        Returns : None
+
+        """
+        if cls.__name__ not in ['lineplot', 'barplot']:
+            raise TypeError('Currently only support seaborn.lineplot or seaborn.barplot')
+
+        data = self._fetch_data()
+
+        fig = plt.figure()
+        cls(data=data, y=y_name, x=x_name, **kwargs)
+        seaborn.despine(fig=fig, top=True, right=True)
+
+        if title:
+            plt.title(title)
+        if xlabel:
+            plt.xlabel(xlabel)
+        if ylabel:
+            plt.ylabel(ylabel)
+        if legend:
+            plt.legend(loc=(1, 0.1))
+
+        if savefig:
+            if fname is None:
+                raise ValueError('Give argument to fname kwarg to save figure.')
+            plt.savefig(fname, dpi=300, bbox_inches='tight')
+            print('figure save to "{}"'.format(fname))
+        else:
+            plt.show()
 
 class IngredientAnalytics(_QueryOpenFDA):
     """
@@ -133,7 +178,7 @@ class IngredientAnalytics(_QueryOpenFDA):
                 continue
             manufacturer_name = i['openfda']['manufacturer_name']
             generic_name = i['openfda']['generic_name']
-            spl_product_data_elements = len(i['spl_product_data_elements'][0].split(' '))
+            spl_product_data_elements = len(i['spl_product_data_elements'][0].split(','))
 
             l.append([generic_name, effective_time, spl_product_data_elements, manufacturer_name])
         return pd.DataFrame(l, columns=['generic_name', 'year', 'num_ingredients', 'manufacturer'])
@@ -158,35 +203,6 @@ class IngredientAnalytics(_QueryOpenFDA):
         df = df[['drug_names', 'avg_number_of_ingredients']]
         return df
 
-    def plot(self, cls=seaborn.lineplot, savefig=False):
-        """
-        plots the average number of ingredients per year in astrazenica drugs.
-        Args:
-            cls (class): either seaborn.lineplot or seaborn.barplot
-            savefig (bool): Save to file when True and show when False
-
-        Returns (None):
-        """
-        if cls.__name__ not in ['lineplot', 'barplot']:
-            raise TypeError('Currently only support seaborn.lineplot or seaborn.barplot')
-        data = self._fetch_data()
-        fig = plt.figure()
-        cls(data=data, y='num_ingredients', x='year')
-        data = self._fetch_data()
-        fig = plt.figure()
-        seaborn.lineplot(data=data, y='num_ingredients', x='year')
-        seaborn.despine(fig=fig, top=True, right=True)
-        plt.title('Number of ingredients in AstraZeneca products per year')
-
-        plt.xlabel('Number of Ingredients')
-        plt.ylabel('Year')
-
-        if savefig:
-            fname = os.path.join(GRAPHS_DIRECTORY, 'number_of_ingredients_per_year_{}.png'.format(cls.__name__))
-            plt.savefig(fname, dpi=300, bbox_inches='tight')
-            print('figure save to "{}"'.format(fname))
-        else:
-            plt.show()
 
 
 class IngredientAndRouteAnalytics(_QueryOpenFDA):
@@ -211,7 +227,7 @@ class IngredientAndRouteAnalytics(_QueryOpenFDA):
             except KeyError:
                 route = np.nan
             generic_name = i['openfda']['generic_name']
-            spl_product_data_elements = len(i['spl_product_data_elements'][0].split(' '))
+            spl_product_data_elements = len(i['spl_product_data_elements'][0].split(','))
 
             l.append([generic_name, route, effective_time, spl_product_data_elements, manufacturer_name])
         return pd.DataFrame(l, columns=['generic_name', 'route', 'year', 'num_ingredients', 'manufacturer'])
@@ -241,34 +257,6 @@ class IngredientAndRouteAnalytics(_QueryOpenFDA):
         df.rename(columns={'num_ingredients': 'avg_number_of_ingredients'}, inplace=True)
         return df
 
-    def plot(self, cls=seaborn.lineplot, savefig=False):
-        """
-        plots the average number of ingredients per year per route in astrazenica drugs.
-        Args:
-            cls (class): either seaborn.lineplot or seaborn.barplot
-            savefig (bool): Save to file when True and show when False
-
-        Returns (None):
-
-        """
-        if cls.__name__ not in ['lineplot', 'barplot']:
-            raise TypeError('Currently only support seaborn.lineplot or seaborn.barplot')
-        data = self._fetch_data()
-        fig = plt.figure()
-        cls(data=data, y='num_ingredients', x='year', hue='route')
-        seaborn.despine(fig=fig, top=True, right=True)
-        plt.title('Number of ingredients in AstraZeneca \nproducts per year per administration route')
-        plt.legend(loc=(1, 0.5))
-        plt.xlabel('Number of Ingredients')
-        plt.ylabel('Year')
-
-        if savefig:
-            fname = os.path.join(GRAPHS_DIRECTORY, 'number_of_ingredients_per_year_per_route_{}.png'.format(cls.__name__))
-            plt.savefig(fname, dpi=300, bbox_inches='tight')
-            print('figure save to "{}"'.format(fname))
-
-        else:
-            plt.show()
 
 
 if __name__ == '__main__':
@@ -278,30 +266,41 @@ if __name__ == '__main__':
     ingredient_analytics = IngredientAnalytics(query_url)
     print(ingredient_analytics.av_number_ingredients_per_year())
 
-    ingredient_analytics.plot(seaborn.lineplot, True)
-    ingredient_analytics.plot(seaborn.barplot, True)
+    for i in [seaborn.lineplot, seaborn.barplot]:
+        ingredient_analytics.plot(
+            x_name='year', y_name='num_ingredients',
+            savefig=True,
+            fname=os.path.join(GRAPHS_DIRECTORY, 'number_of_ingredients_per_year_{}.png'.format(i.__name__)),
+            cls=i, title='Number of Ingredients in AstraZeneca Drugs per year',
+            xlabel='year', ylabel='Number of ingredients'
+        )
 
     # task 2
     ingredient_and_route_analytics = IngredientAndRouteAnalytics(query_url)
     print(ingredient_and_route_analytics.av_number_ingredients_per_year_per_route())
 
-    ingredient_and_route_analytics.plot(seaborn.lineplot, savefig=True)
-    ingredient_and_route_analytics.plot(seaborn.barplot, savefig=True)
+    for i in [seaborn.lineplot, seaborn.barplot]:
+        ingredient_and_route_analytics.plot(
+            x_name='year', y_name='num_ingredients',
+            savefig=True,
+            fname=os.path.join(GRAPHS_DIRECTORY, 'number_of_ingredients_per_year_per_route{}.png'.format(i.__name__)),
+            cls=i, title='Number of Ingredients in AstraZeneca \nDrugs per Year per Route',
+            xlabel='year', ylabel='Number of ingredients', hue='route', legend=True
+        )
+
 
 """
-reflections
+Reflections
 -----------
-- This implementation contains a reasonable amount of duplicated code. It would be 
-  better to implement a single, more flexible, class that was capable of performing both 
-  the functions of IngredientAnalytics adnd IngredientAndRouteAnalytics. It would be nice to 
-  simply specify the field as a parameter and use the same class for all OpenFDA 
-  searches, but given that the raw data requires some post-retrieval processing, 
-  a new implementation of 'extract_relevant_data' is more useful for every search. 
+- It would be nice to simply specify fields as parameters and use the same class for all 
+  OpenFDA searches. However, the subclass system I've put in place here is more appropriate 
+  because the data return for each search requires some post-retrieval processing. 
 - The query being used to test this code only returned 43 results. Other similar queries 
   returned more (>500) but closer inspection revealed the drugs were manufactured by companies 
-  other than AstraZenica. With more time, and perhaps outside of a 'challenge' setting, I would have
+  other than AstraZeneca. 
+- With more time, and perhaps outside of a 'challenge' setting, I would have
   made some effort to clarify the meaning of the phrase "AstraZeneca medinine". Does it mean those sold 
-  by AZ? Produced by AZ? Manafactured by AZ? 
+  by AZ? Produced by AZ? Manafactured by AZ? Researched by AZ? 
 
 
 Answers to other questions
@@ -312,31 +311,31 @@ How would you code a model to predict the number of ingredients for next year? N
 - I think this is probably quite a difficult task because I do not expect the number of ingredients 
   contained in a drug to be correlated with time. Drug ingredients depend on the mechanistic requirements 
   of a therapy, it doesn't necessarily matter *when* the drug is produced. 
-  - Maybe a better predictor of number of ingredients per medicine would be the category of disease 
-    the drug is being used to treat. 
-- If after expressing my concerns regarding the problem definition I was still asked to try and 
-  use year to predict number of medicines in AstraZeneca medicines I would first clarify the meaning
-  of the phrase "AstraZeneca medicine". Once I have clarification I would consider trying to model the 
-  trend (if any) with an autoregressive model. Failing that we could try a recurrent neural network with 
-  a LSTM architecture, using keras for a simple first implementation. Note however, it would be 
-  important to ensure we had much more than the 43 data points (like we have here) 
-  for training/testing. 
+  - Route of administration may be better predictor for number of ingredients in a drug, given that there 
+    seems to be significantly more ingredients in oral drugs than other drugs. However, I still think that 
+    there may be other predictors that would suit the problem better, i.e. disease type maybe?  
+- If after expressing my concerns regarding the problem definition, I was still asked to try and 
+  use year to predict number of medicines in AstraZeneca medicines, I would first clarify the meaning
+  of the phrase "AstraZeneca medicine" and to ensure i had the correct data. Then I would try to 
+  model a trend (assuming one can be found) with an autoregressive model.
+  Failing that we could try a recurrent neural network with (maybe) a LSTM architecture, 
+  using keras for a simple first implementation. Note however, it would be 
+  important to ensure we had much more than the 43 data points for training/testing. 
 
 Could you find the most common drug interactions for AstraZeneca medicines?
 
 - I would get the set of all AstraZeneca medicines and then the subset of pairs of compounds that interact. Then I'd 
-  find the pair of compounds that are present in the most AstraZeneca drugs. 
+  find the pair of compounds that occur most frequently in AstraZeneca drugs. 
 
 
 How would you deploy your analysis/model as a tool that other users can use?
 
-- Could be a library, much like this one. 
-- Or could be an app or some other software that passes an input to a copy of the fully trained model 
-  which would be evaluated and returned to the user, whether a simple command line program or 
-  something more sophisticated.  
-- It would be interesting to implement a piece of software that contains many such models with a UI. 
-  This model would then be just one of a list of useful models that can be evaluated (i.e. used to make 
-  predictions) by supplying the input requirements of the model. 
-- This model would have to be presented with a year (or year and route) as input and the model 
-      would predict the number of ingredients AztraZeneca uses per year (or per year and route).
+- Could be a library/package/module, an app, command line program or full blown software. All of these could 
+  implement an interface that enables users to enter their inputs (i.e. their new instances of 
+  year or year and route of administration) to a copy of the fully trained model. 
+  The model would be evaluated and the output (i.e. predictions) returned to the 
+  user.
+  - It would be interesting to implement a piece of software (like a platform) that contains many such models with a UI. 
+    This model would then be just one of a list of useful models that can be used to make a variety of predictions
+
 """
