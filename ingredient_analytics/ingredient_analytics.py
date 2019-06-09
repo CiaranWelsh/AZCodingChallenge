@@ -292,12 +292,16 @@ if __name__ == '__main__':
 reflections
 -----------
 - This implementation contains a reasonable amount of duplicated code. It would be 
-  better to find a single more flexible class that was capable of performing both 
-  the functions of IngredientAnalytics adnd IngredientAndRouteAnalytics. 
+  better to implement a single, more flexible, class that was capable of performing both 
+  the functions of IngredientAnalytics adnd IngredientAndRouteAnalytics. It would be nice to 
+  simply specify the field as a parameter and use the same class for all OpenFDA 
+  searches, but given that the raw data requires some post-retrieval processing, 
+  a new implementation of 'extract_relevant_data' is more useful for every search. 
 - The query being used to test this code only returned 43 results. Other similar queries 
-  returned more (>500) but closer inspection revealed the drugs were sold by companies 
-  other than AstraZenica. With more time, the API would have been more appropriately explored 
-
+  returned more (>500) but closer inspection revealed the drugs were manufactured by companies 
+  other than AstraZenica. With more time, and perhaps outside of a 'challenge' setting, I would have
+  made some effort to clarify the meaning of the phrase "AstraZeneca medinine". Does it mean those sold 
+  by AZ? Produced by AZ? Manafactured by AZ? 
 
 
 Answers to other questions
@@ -305,22 +309,34 @@ Answers to other questions
 
 How would you code a model to predict the number of ingredients for next year? Note: Your predictions don't have to be good !
 
-- Assuming the search url was modified so that it returned much more than 43 results, i.e. so that we  have enough 
-  data to train a model, we could try using a recurrent neural network which are good for 
-  predicting sequences. As a first take I would use keras to implement a LSTM architecture and train 
-  by minimizing the root mean squared error. The model would be evaluated using both a validation dataset (during training) 
-  and a test set (after training). 
+- I think this is probably quite a difficult task because I do not expect the number of ingredients 
+  contained in a drug to be correlated with time. Drug ingredients depend on the mechanistic requirements 
+  of a therapy, it doesn't necessarily matter *when* the drug is produced. 
+  - Maybe a better predictor of number of ingredients per medicine would be the category of disease 
+    the drug is being used to treat. 
+- If after expressing my concerns regarding the problem definition I was still asked to try and 
+  use year to predict number of medicines in AstraZeneca medicines I would first clarify the meaning
+  of the phrase "AstraZeneca medicine". Once I have clarification I would consider trying to model the 
+  trend (if any) with an autoregressive model. Failing that we could try a recurrent neural network with 
+  a LSTM architecture, using keras for a simple first implementation. Note however, it would be 
+  important to ensure we had much more than the 43 data points (like we have here) 
+  for training/testing. 
 
 Could you find the most common drug interactions for AstraZeneca medicines?
 
 - I would get the set of all AstraZeneca medicines and then the subset of pairs of compounds that interact. Then I'd 
-  find the pair of compounds that are present in most drugs. 
+  find the pair of compounds that are present in the most AstraZeneca drugs. 
 
 
 How would you deploy your analysis/model as a tool that other users can use?
 
 - Could be a library, much like this one. 
-- Or could be an app or some other form of software that has the model embedded within.  
-- The model would have to be presented with a year (or year and route) as input and the model 
-  would predict the number of ingredients AztraZeneca uses per year (or per year and route).
+- Or could be an app or some other software that passes an input to a copy of the fully trained model 
+  which would be evaluated and returned to the user, whether a simple command line program or 
+  something more sophisticated.  
+- It would be interesting to implement a piece of software that contains many such models with a UI. 
+  This model would then be just one of a list of useful models that can be evaluated (i.e. used to make 
+  predictions) by supplying the input requirements of the model. 
+- This model would have to be presented with a year (or year and route) as input and the model 
+      would predict the number of ingredients AztraZeneca uses per year (or per year and route).
 """
