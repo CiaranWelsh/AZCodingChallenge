@@ -283,7 +283,7 @@ if __name__ == '__main__':
         ingredient_and_route_analytics.plot(
             x_name='year', y_name='num_ingredients',
             savefig=True,
-            fname=os.path.join(GRAPHS_DIRECTORY, 'number_of_ingredients_per_year_per_route{}.png'.format(i.__name__)),
+            fname=os.path.join(GRAPHS_DIRECTORY, 'number_of_ingredients_per_year_per_route_{}.png'.format(i.__name__)),
             cls=i, title='Number of Ingredients in AstraZeneca \nDrugs per Year per Route',
             xlabel='year', ylabel='Number of ingredients', hue='route', legend=True
         )

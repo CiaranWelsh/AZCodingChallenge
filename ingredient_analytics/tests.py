@@ -14,20 +14,24 @@ class IngredientAnalyticTests(unittest.TestCase):
     def test_fetch_data(self):
         q = IngredientAnalytics(self.url)
         df = q._fetch_data()
-        expected = 43
+        expected = 44
         self.assertEqual(expected, df.shape[0])
 
     def test_plot(self):
         q = IngredientAnalytics(self.url)
-        q.barplot(savefig=True)
-        fname = os.path.join(GRAPHS_DIRECTORY, 'number_of_ingredients_per_year.png')
+        q.plot(
+            x_name='year', y_name='num_ingredients',
+            savefig=True,
+            fname=os.path.join(GRAPHS_DIRECTORY, 'number_of_ingredients_per_year_lineplot.png'),
+        )
+        fname = os.path.join(GRAPHS_DIRECTORY, 'number_of_ingredients_per_year_lineplot.png')
         self.assertTrue(os.path.isfile(fname))
 
     def test_average_num_per_year(self):
         q = IngredientAnalytics(self.url)
-        expected = 46.666667
+        expected = 3.8
         actual = q.av_number_ingredients_per_year().loc[2017]['avg_number_of_ingredients']
-        self.assertAlmostEqual(expected, actual, 4)
+        self.assertAlmostEqual(expected, actual)
 
 
 class IngredientAndRouteAnalyticsTests(unittest.TestCase):
@@ -46,15 +50,19 @@ class IngredientAndRouteAnalyticsTests(unittest.TestCase):
 
     def test_plot(self):
         q = IngredientAndRouteAnalytics(self.url)
-        q.plot(savefig=True)
-        fname = os.path.join(GRAPHS_DIRECTORY, 'number_of_ingredients_per_year_per_route.png')
+        q.plot(
+            x_name='year', y_name='num_ingredients',
+            savefig=True,
+            fname=os.path.join(GRAPHS_DIRECTORY, 'number_of_ingredients_per_year_per_route_lineplot.png'),
+            )
+        fname = os.path.join(GRAPHS_DIRECTORY, 'number_of_ingredients_per_year_per_route_lineplot.png')
         self.assertTrue(os.path.isfile(fname))
 
     def test_average_num_per_year_per_route(self):
         q = IngredientAndRouteAnalytics(self.url)
-        expected = 12.0
+        expected = 1.0
         actual = q.av_number_ingredients_per_year_per_route().loc[2017, 'SUBCUTANEOUS']['avg_number_of_ingredients']
-        self.assertAlmostEqual(expected, actual, 4)
+        self.assertAlmostEqual(expected, actual)
 
 
 if __name__ == '__main__':
